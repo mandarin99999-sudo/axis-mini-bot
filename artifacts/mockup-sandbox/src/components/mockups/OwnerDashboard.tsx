@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-const AXIS_LOGO = "/axis-logo.png";
+const AXIS_LOGO = "/axis-logo-telegram.jpg";
 
 type DashboardData = {
   product: {
@@ -399,7 +399,7 @@ export default function OwnerDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/owner-dashboard?days=7")
+    fetch("/api/owner-dashboard?days=7&fast=1")
       .then((res) => {
         if (!res.ok) throw new Error(String(res.status));
         return res.json() as Promise<DashboardData>;
@@ -446,7 +446,7 @@ export default function OwnerDashboard() {
     const value = data.pilot_value?.salesReadiness;
     if (!value?.total) return 0;
     return Math.round((value.score / value.total) * 100);
-  }, [data.pilot_value?.salesReadiness.score, data.pilot_value?.salesReadiness.total]);
+  }, [data.pilot_value?.salesReadiness?.score, data.pilot_value?.salesReadiness?.total]);
 
   return (
     <main className="min-h-screen bg-[#F3F4F6] text-[#1B2430] [font-family:Inter,sans-serif]">
@@ -574,7 +574,7 @@ export default function OwnerDashboard() {
               <span className="text-sm text-slate-500">{data.pilot_readiness.score} из {data.pilot_readiness.total}</span>
             </div>
             <div className="space-y-2">
-              {data.pilot_readiness.checks.map((check) => (
+              {(data.pilot_readiness.checks ?? []).map((check) => (
                 <div key={check.key} className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className={`h-4 w-4 ${check.ok ? "text-emerald-600" : "text-slate-300"}`} />
                   <span className={check.ok ? "text-slate-700" : "text-slate-400"}>{check.label}</span>
@@ -594,9 +594,9 @@ export default function OwnerDashboard() {
                 </div>
                 <TrendingUp className="h-5 w-5 text-slate-500" />
               </div>
-              <p className="text-sm leading-6 text-slate-700">{data.pilot_value.ownerSummary}</p>
+              <p className="text-sm leading-6 text-slate-700">{data.pilot_value.ownerSummary ?? ""}</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                {data.pilot_value.valueMetrics.slice(0, 3).map((item) => (
+                {(data.pilot_value.valueMetrics ?? []).slice(0, 3).map((item) => (
                   <div key={item.key} className="rounded-md border border-slate-200 bg-slate-50 p-3">
                     <div className="text-2xl font-semibold text-slate-950">{item.value}</div>
                     <div className="mt-1 text-sm font-medium text-slate-700">{item.label}</div>
@@ -614,14 +614,14 @@ export default function OwnerDashboard() {
               <div className="mb-3 flex items-baseline gap-2">
                 <span className="text-3xl font-semibold">{pilotValuePercent}%</span>
                 <span className="text-sm text-slate-500">
-                  {data.pilot_value.salesReadiness.score} из {data.pilot_value.salesReadiness.total}
+                  {data.pilot_value.salesReadiness?.score ?? 0} из {data.pilot_value.salesReadiness?.total ?? 0}
                 </span>
               </div>
               <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-950">
-                {pilotVerdictLabel(data.pilot_value.salesReadiness.verdict)}
+                {pilotVerdictLabel(data.pilot_value.salesReadiness?.verdict)}
               </div>
               <div className="mt-3 space-y-2">
-                {data.pilot_value.salesReadiness.reasons.slice(0, 5).map((reason) => (
+                {(data.pilot_value.salesReadiness?.reasons ?? []).slice(0, 5).map((reason) => (
                   <div key={reason} className="flex items-center gap-2 text-sm text-slate-700">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                     <span>{reason}</span>
@@ -729,7 +729,7 @@ export default function OwnerDashboard() {
 
           <Section title="Отчёты и навыки">
             <CompactList
-              rows={[...data.lists.reports_need_review, ...data.lists.business_skills]}
+              rows={[...(data.lists.reports_need_review ?? []), ...(data.lists.business_skills ?? [])]}
               empty="Нет отчётов на проверку и новых навыков."
               render={(row) => (
                 <div key={`${String(row.id)}-${text(row, "title", text(row, "report_type"))}`} className="p-3">
