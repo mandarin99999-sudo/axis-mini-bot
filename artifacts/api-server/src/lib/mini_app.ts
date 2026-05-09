@@ -41,18 +41,33 @@ function cleanPath(value: string): string {
   return `/${path.replace(/^\/+/, "").replace(/\/+$/, "")}`;
 }
 
+function normalizeMiniAppPath(path: string): string {
+  const cleaned = cleanPath(path);
+  if (cleaned === "/__mockup" || cleaned === "/__mockup/mini-app") {
+    return "/api/mini-app";
+  }
+  return cleaned;
+}
+
+function normalizeExplicitMiniAppUrl(value: string): string {
+  const raw = value.trim().replace(/\/$/, "");
+  try {
+    const url = new URL(raw);
+    if (url.pathname === "/__mockup" || url.pathname === "/__mockup/mini-app") {
+      url.pathname = "/api/mini-app";
+      url.search = "";
+      url.hash = "";
+      return url.toString().replace(/\/$/, "");
+    }
+    return raw;
+  } catch {
+    return raw.replace(/\/__mockup(?:\/mini-app)?\/?$/i, "/api/mini-app");
+  }
+}
+
 function resolveMiniAppPath(): string {
   const explicitPath = process.env["AXIS_MINI_APP_PATH"] ?? process.env["MINI_APP_PATH"];
-  if (explicitPath?.trim()) return cleanPath(explicitPath);
-
-  const basePath = process.env["BASE_PATH"];
-  if (basePath?.trim() && basePath.trim() !== "/") {
-    return `${cleanPath(basePath)}/mini-app`;
-  }
-
-  if (process.env["REPLIT_DEV_DOMAIN"]) {
-    return "/__mockup/mini-app";
-  }
+  if (explicitPath?.trim()) return normalizeMiniAppPath(explicitPath);
 
   return "/api/mini-app";
 }
@@ -78,14 +93,15 @@ export function resolvePublicBaseUrl(): string | null {
 export function resolveMiniAppUrl(): string | null {
   const explicit = explicitMiniAppUrl();
   if (explicit) {
+    const normalizedExplicit = normalizeExplicitMiniAppUrl(explicit);
     const origin = originFromUrl(explicit);
     if (origin) {
-      const path = new URL(explicit).pathname;
-      if (path && path !== "/") return explicit;
-      return `${explicit}${resolveMiniAppPath()}`;
+      const path = new URL(normalizedExplicit).pathname;
+      if (path && path !== "/") return normalizedExplicit;
+      return `${normalizedExplicit}${resolveMiniAppPath()}`;
     }
 
-    if (explicit.includes("/mini-app")) return explicit;
+    if (normalizedExplicit.includes("/mini-app")) return normalizedExplicit;
   }
 
   const baseUrl = resolvePublicBaseUrl();
